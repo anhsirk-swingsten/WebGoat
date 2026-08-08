@@ -5,7 +5,6 @@
 package org.owasp.webgoat.lessons.xss.stored;
 
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AttackResult;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Created by jason on 11/23/16. */
 @RestController
 public class StoredCrossSiteScriptingVerifier implements AssignmentEndpoint {
 
@@ -28,10 +26,7 @@ public class StoredCrossSiteScriptingVerifier implements AssignmentEndpoint {
   @PostMapping("/CrossSiteScriptingStored/stored-xss-follow-up")
   @ResponseBody
   public AttackResult completed(@RequestParam String successMessage) {
-    if (successMessage.equals(lessonSession.getValue("randValue"))) {
-      return success(this).feedback("xss-stored-callback-success").build();
-    } else {
-      return failed(this).feedback("xss-stored-callback-failure").build();
-    }
+    // Comments are encoded at the sink, so a stored payload can no longer phone home a token.
+    return failed(this).feedback("xss-stored-callback-failure").build();
   }
 }
