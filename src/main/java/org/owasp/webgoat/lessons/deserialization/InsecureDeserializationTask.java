@@ -5,7 +5,6 @@
 package org.owasp.webgoat.lessons.deserialization;
 
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,11 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 })
 public class InsecureDeserializationTask implements AssignmentEndpoint {
 
-  // Explicit allow-list of the types this endpoint ever legitimately needs to deserialize:
-  // the lesson's own gadget plus the supporting JDK types it is made of (String and the
-  // java.time serialization proxies backing LocalDateTime). Everything else - including any
-  // other class reachable on the classpath, such as ysoserial-style gadget chains - is
-  // rejected before it is instantiated, so a class's readObject()/constructor never runs.
   private static final ObjectInputFilter ALLOWED_TYPES =
       ObjectInputFilter.Config.createFilter(
           VulnerableTaskHolder.class.getName() + ";java.time.*;java.lang.String;!*");
@@ -42,25 +36,16 @@ public class InsecureDeserializationTask implements AssignmentEndpoint {
   @PostMapping("/InsecureDeserialization/task")
   @ResponseBody
   public AttackResult completed(@RequestParam String token) throws IOException {
-    String b64token;
-    long before;
-    long after;
-    int delay;
-
-    b64token = token.replace('-', '+').replace('_', '/');
-
+    String b64token = token.replace("-", "+").replace("_", "/");
     try (ObjectInputStream ois =
         new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(b64token)))) {
       ois.setObjectInputFilter(ALLOWED_TYPES);
-      before = System.currentTimeMillis();
       Object o = ois.readObject();
-      if (!(o instanceof VulnerableTaskHolder)) {
-        if (o instanceof String) {
-          return failed(this).feedback("insecure-deserialization.stringobject").build();
-        }
-        return failed(this).feedback("insecure-deserialization.wrongobject").build();
+      if (o instanceof String) {
+        return failed(this).feedback("insecure-deserialization.stringobject").build();
       }
-      after = System.currentTimeMillis();
+      // Deserialization must never be treated as a successful exploit path.
+      return failed(this).feedback("insecure-deserialization.wrongobject").build();
     } catch (InvalidClassException e) {
       return failed(this).feedback("insecure-deserialization.invalidversion").build();
     } catch (IllegalArgumentException e) {
@@ -68,14 +53,5 @@ public class InsecureDeserializationTask implements AssignmentEndpoint {
     } catch (Exception e) {
       return failed(this).feedback("insecure-deserialization.invalidversion").build();
     }
-
-    delay = (int) (after - before);
-    if (delay > 7000) {
-      return failed(this).build();
-    }
-    if (delay < 3000) {
-      return failed(this).build();
-    }
-    return success(this).build();
   }
 }
