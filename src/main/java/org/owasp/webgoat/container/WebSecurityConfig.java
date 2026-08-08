@@ -22,6 +22,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /** Security configuration for WebGoat. */
 @Configuration
@@ -65,6 +66,7 @@ public class WebSecurityConfig {
               oidc.defaultSuccessUrl("/login-oauth.mvc");
               oidc.loginPage("/login");
             })
+        .addFilterBefore(new CrossOriginLoginFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout(logout -> logout.deleteCookies("JSESSIONID").invalidateHttpSession(true))
         .csrf(
             csrf ->
